@@ -6,6 +6,8 @@
         "istream": "cpp",
         "cstdio": "cpp",
         "typeinfo": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "cerrno": "cpp",
+        "string": "cpp"
     }
 }
