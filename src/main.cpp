@@ -9,11 +9,14 @@
 
 
 #include <iostream>
+
 #include "cmdline.hpp"
 
 
 int main(int argc, char const *argv[]) {
     cmdline::parser parser;
+    parser.add<string>("run", 'r', "Run jobfile");
+    parser.add("share", "");
     parser.add("show", 's', "Show working queue now");
 
     parser.set_program_name("submit");
