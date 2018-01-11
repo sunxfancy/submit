@@ -7,3 +7,4 @@ bin/
 build/
 build-doc/
 
+test_program/pause

@@ -20,7 +20,7 @@ Submit::~Submit() {
 }
 
 void Submit::sub(int argc, char** argv) {
-    FILE* rfp = fopen("/tmp/submit_running", "r+");
+    FILE* rfp = fopen("/tmp/submit_running", "w+");
     if (flock(rfp->_fileno, LOCK_EX|LOCK_NB) == -1) {
         if (errno == EWOULDBLOCK) {
             // lock file was locked, something running
@@ -77,13 +77,16 @@ void Submit::createNewProcess(int argc, char** argv) {
 
 void Submit::show() {
     loadCfg();
+    if (job_queue.empty()) {
+        printf("Now, the job queue is empty.\n");
+    }
     for (auto p : job_queue) {
         cout << p.pid << "\t\t\t" << p.name << "\t\t" << p.user << endl;
     }
 }
 
 void Submit::loadCfg() {
-    FILE* fp = fopen("/tmp/submit_jobqueue", "r+");
+    FILE* fp = fopen("/tmp/submit_jobqueue", "w+");
     flock(fp->_fileno, LOCK_EX);
     loadCfg(fp);
     flock(fp->_fileno, LOCK_UN); 
@@ -96,7 +99,7 @@ void Submit::loadCfg(FILE* fp) {
     char cmd[256]; 
     char user[64];
     pid_t pid;
-    while (fscanf(fp, "%d %s %s", &pid, cmd, user)) {
+    while (fscanf(fp, "%d %s %s", &pid, cmd, user) != EOF) {
         Job job{pid, string(cmd), string(user)};
         job_queue.push_back(job);
     }
@@ -111,7 +114,7 @@ void Submit::saveCfg(FILE* fp) {
 // return true means queue empty
 bool Submit::checkAndAddCfg(const char* command) {
     bool ret;
-    FILE* fp = fopen("/tmp/submit_jobqueue", "r+");
+    FILE* fp = fopen("/tmp/submit_jobqueue", "w+");
     flock(fp->_fileno, LOCK_EX);
     
     loadCfg(fp);
@@ -130,7 +133,7 @@ bool Submit::checkAndAddCfg(const char* command) {
 
 
 void Submit::removeFirstInCfg() {
-    FILE* fp = fopen("/tmp/submit_jobqueue", "a+");
+    FILE* fp = fopen("/tmp/submit_jobqueue", "w+");
     flock(fp->_fileno, LOCK_EX);
 
     loadCfg(fp);

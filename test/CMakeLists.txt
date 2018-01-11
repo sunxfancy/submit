@@ -15,6 +15,7 @@ endif()
 
 target_link_libraries(all_test
                         ${PROJECT_NAME}
+                        ${CONAN_LIBS}
                         ${GTEST_BOTH_LIBRARIES}
                         ${PTHREAD})
 
