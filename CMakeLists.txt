@@ -9,10 +9,8 @@ endif()
 conan_basic_setup()
 
 SET(VERSION_MAJOR "0")
-SET(VERSION_MINOR "1")
+SET(VERSION_MINOR "2")
 SET(VERSION_PATCH "0")
-
-SET (CMAKE_BUILD_TYPE Release) # 默认构建Debug模式
 
 include_directories(src include)
 

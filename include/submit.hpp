@@ -8,6 +8,18 @@
 #include <unistd.h>
 
 struct Job {
+    Job(pid_t pid,std::string name,std::string user) {
+        this->pid = pid;
+        this->name = name;
+        this->user = user;
+    }
+
+    Job(const Job& other) { 
+        pid = other.pid;
+        name = other.name;
+        user = other.user;
+    }
+
     pid_t pid;
     std::string name;
     std::string user;

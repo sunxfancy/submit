@@ -20,7 +20,7 @@ Submit::~Submit() {
 }
 
 void Submit::sub(int argc, char** argv) {
-    FILE* rfp = fopen("/tmp/submit_running", "w+");
+    FILE* rfp = fopen("/tmp/submit_running.lock", "w+");
     if (flock(rfp->_fileno, LOCK_EX|LOCK_NB) == -1) {
         if (errno == EWOULDBLOCK) {
             // lock file was locked, something running
@@ -65,12 +65,13 @@ void Submit::createNewProcess(int argc, char** argv) {
     pid_t pid=fork();              //   父进程返回的pid是大于零的，而创建的子进程返回的pid是 等于0的，这个机制正好用来区分 父进程和子进程
     if(pid==0)//子进程
     {  
-        execvp(argv[0], argv);         
+        execvp(argv[0], argv);
+        exit(-1); //子进程加载异常，否则这句代码应该在加载后被覆盖
     }
     else      //父进程
     {      
         wait(NULL);   //等待子进程结束
-        printf("\nchild complete\n");
+        printf("\work complete\n");
     }
 }
 
@@ -86,11 +87,17 @@ void Submit::show() {
 }
 
 void Submit::loadCfg() {
-    FILE* fp = fopen("/tmp/submit_jobqueue", "w+");
-    flock(fp->_fileno, LOCK_EX);
-    loadCfg(fp);
-    flock(fp->_fileno, LOCK_UN); 
-    fclose(fp);
+    FILE* fp = fopen("/tmp/submit_jobqueue.lock", "w+");　// open lock file, if not exist, then create one
+    flock(fp->_fileno, LOCK_EX);  // lock
+
+    FILE* frp = fopen("/tmp/submit_jobqueue", "r");
+    if (frp != NULL) {
+        loadCfg(frp);
+        fclose(frp);
+    }
+
+    flock(fp->_fileno, LOCK_UN);  // unlock
+    fclose(fp);  // release file
 }
 
 void Submit::loadCfg(FILE* fp) {
@@ -106,24 +113,32 @@ void Submit::loadCfg(FILE* fp) {
 }
 
 void Submit::saveCfg(FILE* fp) {
-    for (auto p : job_queue) {
+    for (const Job& p : job_queue) {
         fprintf(fp, "%d %s %s\n", p.pid, p.name.c_str(), p.user.c_str());
     }
+    fprintf(fp, "\n");
 }
 
 // return true means queue empty
 bool Submit::checkAndAddCfg(const char* command) {
     bool ret;
-    FILE* fp = fopen("/tmp/submit_jobqueue", "w+");
+    FILE* fp = fopen("/tmp/submit_jobqueue.lock", "w+");
     flock(fp->_fileno, LOCK_EX);
     
-    loadCfg(fp);
+    FILE* frp = fopen("/tmp/submit_jobqueue", "r");
+    if (frp != NULL) {
+        loadCfg(frp);
+        fclose(frp);
+    }
+    
     if (job_queue.empty()) ret = true; else ret = false;
 
     Job job{my_pid, string(command), string(getUserName())};
     job_queue.push_back(job);
 
-    saveCfg(fp);
+    FILE* fwp = fopen("/tmp/submit_jobqueue", "w");
+    saveCfg(fwp);
+    fclose(fwp);
 
     flock(fp->_fileno, LOCK_UN); 
     fclose(fp);
@@ -133,12 +148,20 @@ bool Submit::checkAndAddCfg(const char* command) {
 
 
 void Submit::removeFirstInCfg() {
-    FILE* fp = fopen("/tmp/submit_jobqueue", "w+");
+    FILE* fp = fopen("/tmp/submit_jobqueue.lock", "w+");
     flock(fp->_fileno, LOCK_EX);
 
-    loadCfg(fp);
-    job_queue.pop_front();
-    saveCfg(fp);
+    FILE* frp = fopen("/tmp/submit_jobqueue", "r");
+    if (frp != NULL) {
+        loadCfg(frp);
+        fclose(frp);
+    }
+    
+    if (!job_queue.empty())
+        job_queue.pop_front();
+    FILE* fwp = fopen("/tmp/submit_jobqueue", "w");
+    saveCfg(fwp);
+    fclose(fwp);
 
     flock(fp->_fileno, LOCK_UN); //释放文件锁  
     fclose(fp);
