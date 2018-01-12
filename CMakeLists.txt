@@ -8,11 +8,16 @@ else()
 endif()
 conan_basic_setup()
 
-SET(VERSION_MAJOR "0")
-SET(VERSION_MINOR "2")
-SET(VERSION_PATCH "0")
+set(VERSION_MAJOR "0")
+set(VERSION_MINOR "2")
+set(VERSION_PATCH "0")
 
-include_directories(src include)
+configure_file (
+    "${PROJECT_SOURCE_DIR}/include/config.h.in"
+    "${PROJECT_BINARY_DIR}/config/config.h"
+)
+
+include_directories(src include ${PROJECT_BINARY_DIR}/config)
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
@@ -25,6 +30,11 @@ if (UNIX)
     SET (CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
     SET (CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
     SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+endif()
+
+if(UNIX AND NOT APPLE)
+	message(STATUS ">>> Linux & link static gcc")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
 endif()
 
 

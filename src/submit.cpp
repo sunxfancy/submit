@@ -65,13 +65,24 @@ void Submit::createNewProcess(int argc, char** argv) {
     pid_t pid=fork();              //   父进程返回的pid是大于零的，而创建的子进程返回的pid是 等于0的，这个机制正好用来区分 父进程和子进程
     if(pid==0)//子进程
     {  
-        execvp(argv[0], argv);
-        exit(-1); //子进程加载异常，否则这句代码应该在加载后被覆盖
+        int ret = execvp(argv[0], argv);
+        exit(ret); //子进程加载异常，否则这句代码应该在加载后被覆盖
     }
     else      //父进程
     {      
-        wait(NULL);   //等待子进程结束
-        printf("\work complete\n");
+        int status;
+        pid_t ret;
+        ret = wait(&status);
+        if(ret <0){
+            perror("wait error");
+            exit(EXIT_FAILURE);
+        }
+        if (WIFEXITED(status))
+            printf("work complete\n");
+        else if (WIFSIGNALED(status))
+            printf("child exited abnormal signal number=%d\n", WTERMSIG(status));
+        else if (WIFSTOPPED(status))
+            printf("child stoped signal number=%d\n", WSTOPSIG(status));
     }
 }
 
@@ -87,7 +98,7 @@ void Submit::show() {
 }
 
 void Submit::loadCfg() {
-    FILE* fp = fopen("/tmp/submit_jobqueue.lock", "w+");　// open lock file, if not exist, then create one
+    FILE* fp = fopen("/tmp/submit_jobqueue.lock", "w+"); // open lock file, if not exist, then create one
     flock(fp->_fileno, LOCK_EX);  // lock
 
     FILE* frp = fopen("/tmp/submit_jobqueue", "r");
