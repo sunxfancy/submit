@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <sys/wait.h>
-
+#include <signal.h>
 
 using namespace std;
 
@@ -19,15 +19,35 @@ Submit::~Submit() {
     
 }
 
+static Submit* object;
+
+void sig_handler(int signo)
+{
+    if (signo == SIGINT) {
+        object->removeFirstInCfg();
+        flock(object->rfp->_fileno, LOCK_UN); 
+        fclose(object->rfp);
+        exit(0);
+    }
+}
+
+void Submit::setupSignal() {
+    object = this;
+    signal(SIGINT, sig_handler);
+}
+
 void Submit::sub(int argc, char** argv) {
-    FILE* rfp = fopen("/tmp/submit_running.lock", "w+");
+    pid_t last_pid = 0;
+    rfp = fopen("/tmp/submit_running.lock", "w+");
     if (flock(rfp->_fileno, LOCK_EX|LOCK_NB) == -1) {
         if (errno == EWOULDBLOCK) {
             // lock file was locked, something running
             if (checkAndAddCfg(argv[0])) {
+                setupSignal();
                 flock(rfp->_fileno, LOCK_EX); // first lock, means the next will be this one
                 goto BEGIN_WORKING;
             } else {
+                setupSignal();
                 flock(rfp->_fileno, LOCK_EX);
                 goto STILL_WAITING;
             }
@@ -39,8 +59,10 @@ void Submit::sub(int argc, char** argv) {
         // flock(rfp->_fileno, LOCK_UN);
         // lock file was unlocked, nothing running or just switch programs
         if (checkAndAddCfg(argv[0])) {
+            setupSignal();
             goto BEGIN_WORKING;
         } else {
+            setupSignal();
             goto STILL_WAITING;
         }
     }
@@ -48,6 +70,10 @@ void Submit::sub(int argc, char** argv) {
 STILL_WAITING:
     loadCfg();
     if (job_queue.front().pid == my_pid) goto BEGIN_WORKING;
+    
+    if (job_queue.front().pid == last_pid) removeFirstInCfg();
+    last_pid = job_queue.front().pid;
+    
     flock(rfp->_fileno, LOCK_UN);
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     flock(rfp->_fileno, LOCK_EX);

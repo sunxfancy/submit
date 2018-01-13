@@ -40,14 +40,17 @@ public:
      */
     void show();
 
+    bool checkAndAddCfg(const char* command);
+    void removeFirstInCfg();
+    void setupSignal();
+    FILE* rfp;
 private:
     void createNewProcess(int argc, char** argv);
     void loadCfg();
     void loadCfg(FILE* fp);
     void saveCfg(FILE* fp);
     const char* getUserName();
-    bool checkAndAddCfg(const char* command);
-    void removeFirstInCfg();
+    
 
     pid_t my_pid;
     std::deque<Job> job_queue;

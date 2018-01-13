@@ -1,6 +1,7 @@
 *.*~
 *.bc
 .fuse*
+.vscode/
 *.sublime-*
 .clang_complete
 bin/
@@ -8,3 +9,4 @@ build/
 build-doc/
 
 test_program/pause
+test_program/sleep
