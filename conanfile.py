@@ -2,9 +2,9 @@ from conans import ConanFile, CMake, tools
 
 class submitConan(ConanFile):
     name = "submit"
-    version = "0.1.0"
+    version = "0.3.0"
     license = "MIT"
-    url = "<Package recipe repository url here, for issues about the package>"
+    url = "https://github.com/sunxfancy/submit"
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False]}
     default_options = "shared=False", "gtest:shared=False"
