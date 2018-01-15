@@ -14,6 +14,8 @@ const char* help_msg =  "Submit " RELEASE_VERSION "\n"
 int main(int argc, char* argv[]) {
     Submit submit;
 
+    if (argc <= 1) { printf("%s", help_msg); return 0; }
+
     string arg1 = argv[1];
     if (arg1 == "-s" || arg1 == "--show") {
         submit.show();

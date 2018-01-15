@@ -10,7 +10,7 @@ conan_basic_setup()
 
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "3")
-set(VERSION_PATCH "0")
+set(VERSION_PATCH "1")
 
 configure_file (
     "${PROJECT_SOURCE_DIR}/include/config.h.in"
